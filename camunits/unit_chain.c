@@ -506,9 +506,7 @@ cam_unit_chain_source_prepare (GSource *source, gint *timeout)
         if (uflags & CAM_UNIT_EVENT_METHOD_TIMEOUT &&
             cam_unit_is_streaming (unit)) {
 
-            GTimeVal t;
-            g_source_get_current_time (source, &t);
-            int64_t now = (int64_t)t.tv_sec * 1000000 + t.tv_usec;
+            int64_t now = g_get_real_time ();
 
             int64_t event_time = cam_unit_get_next_event_time (unit);
 
@@ -554,9 +552,7 @@ cam_unit_chain_source_check (GSource *source)
         }
 
         if (uflags & CAM_UNIT_EVENT_METHOD_TIMEOUT) {
-            GTimeVal t;
-            g_source_get_current_time (source, &t);
-            int64_t now = (int64_t)t.tv_sec * 1000000 + t.tv_usec;
+            int64_t now = g_get_real_time ();
 
             int64_t event_time = cam_unit_get_next_event_time (unit);
 
