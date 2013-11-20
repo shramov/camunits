@@ -30,7 +30,7 @@ struct _CamUnitControlWidgetPriv {
     GtkAlignment *alignment;
     GtkExpander *expander;
     GtkButton *close_button;
-    GtkTable *table;
+    GtkGrid *table;
     GtkWidget * arrow_bin;
     GtkWidget * exp_label;
 
@@ -138,7 +138,7 @@ cam_unit_control_widget_init(CamUnitControlWidget *self)
     gtk_widget_show (GTK_WIDGET(priv->close_button));
 
     // table for all the widgets
-    priv->table = GTK_TABLE(gtk_table_new(1, 3, FALSE));
+    priv->table = GTK_GRID(gtk_grid_new());
     gtk_container_set_border_width(GTK_CONTAINER(vbox), 2);
     gtk_box_pack_start(GTK_BOX(vbox), GTK_WIDGET(priv->table), 
             FALSE, FALSE, 0);
@@ -350,11 +350,9 @@ add_slider (CamUnitControlWidget * self,
     GtkWidget *label = gtk_label_new(tmp);
     free(tmp);
     gtk_misc_set_alignment (GTK_MISC (label), 1, 0.5);
-    gtk_table_attach (priv->table, label, 0, 1,
-            priv->trows, priv->trows+1,
-            GTK_FILL, 0, 0, 0);
+    gtk_grid_attach (priv->table, label, 0, priv->trows, 1, 1); // GTK_FILL
     gtk_widget_show (label);
-    GtkWidget *range = gtk_hscale_new_with_range(min, max, step);
+    GtkWidget *range = gtk_scale_new_with_range(GTK_ORIENTATION_HORIZONTAL, min, max, step);
     gtk_scale_set_draw_value(GTK_SCALE(range), FALSE);
     set_tooltip (self, range, ctl);
 
@@ -366,17 +364,15 @@ add_slider (CamUnitControlWidget * self,
     if (use_int)
         gtk_range_set_round_digits (GTK_RANGE (range), 0);
 
-    gtk_table_attach (priv->table, range, 1, 2,
-            priv->trows, priv->trows+1,
-            GTK_EXPAND | GTK_SHRINK | GTK_FILL, 0, 0, 0);
+    gtk_widget_set_hexpand(range, TRUE);
+    gtk_grid_attach (priv->table, range, 1, priv->trows, 1, 1);
+    //        GTK_EXPAND | GTK_SHRINK | GTK_FILL, 0, 0, 0);
     gtk_widget_show (range);
     gtk_range_set_value (GTK_RANGE (range), initial_value);
 
     // numerical label
     GtkWidget *labelval = gtk_label_new (NULL);
-    gtk_table_attach (priv->table, labelval, 2, 3,
-            priv->trows, priv->trows+1,
-            GTK_FILL, 0, 0, 0);
+    gtk_grid_attach (priv->table, labelval, 2, priv->trows, 1, 1); // GTK_FILL
     PangoFontDescription * desc = pango_font_description_new ();
     pango_font_description_set_family_static (desc, "monospace");
     gtk_widget_modify_font (labelval, desc);
@@ -481,9 +477,7 @@ add_spinbutton (CamUnitControlWidget * self,
     GtkWidget *label = gtk_label_new(tmp);
     free(tmp);
     gtk_misc_set_alignment (GTK_MISC (label), 1, 0.5);
-    gtk_table_attach (priv->table, label, 0, 1,
-            priv->trows, priv->trows+1,
-            GTK_FILL, 0, 0, 0);
+    gtk_grid_attach (priv->table, label, 0, priv->trows, 1, 1); // GTK_FILL
     gtk_widget_show (label);
 
     // spinbutton widget
@@ -491,9 +485,8 @@ add_spinbutton (CamUnitControlWidget * self,
     GtkWidget *spinb = gtk_spin_button_new_with_range (min, max, step);
     set_tooltip (self, spinb, ctl);
 
-    gtk_table_attach (priv->table, spinb, 1, 3,
-            priv->trows, priv->trows+1,
-            GTK_EXPAND | GTK_SHRINK | GTK_FILL, 0, 0, 0);
+    gtk_widget_set_hexpand(spinb, TRUE);
+    gtk_grid_attach (priv->table, spinb, 1, priv->trows, 2, 1); // GTK_EXPAND | GTK_SHRINK | GTK_FILL
     gtk_widget_show (spinb);
     gtk_spin_button_set_value (GTK_SPIN_BUTTON (spinb), initial_value);
 
@@ -609,9 +602,8 @@ add_boolean_ctl_helper(CamUnitControlWidget *self, CamUnitControl *ctl,
     CamUnitControlWidgetPriv * priv = CAM_UNIT_CONTROL_WIDGET_GET_PRIVATE(self);
     gtk_widget_show (cb);
 
-    gtk_table_attach (GTK_TABLE (priv->table), cb, 1, 3,
-            priv->trows, priv->trows+1,
-            GTK_EXPAND | GTK_SHRINK | GTK_FILL, 0, 0, 0);
+    gtk_widget_set_hexpand(cb, TRUE);
+    gtk_grid_attach (priv->table, cb, 1, priv->trows, 2, 1); // GTK_EXPAND | GTK_SHRINK | GTK_FILL
 
     if (GTK_IS_TOGGLE_BUTTON (cb)) {
         int val = cam_unit_control_get_boolean(ctl);
@@ -731,9 +723,7 @@ add_menu_control(CamUnitControlWidget *self, CamUnitControl *ctl)
     GtkWidget *label = gtk_label_new(tmp);
     free(tmp);
     gtk_misc_set_alignment (GTK_MISC (label), 1, 0.5);
-    gtk_table_attach (priv->table, label, 0, 1,
-            priv->trows, priv->trows+1,
-            GTK_FILL, 0, 0, 0);
+    gtk_grid_attach (priv->table, label, 0, priv->trows, 1, 1); // GTK_FILL
     gtk_widget_show (label);
 
     int active_val = cam_unit_control_get_enum(ctl);
@@ -782,9 +772,8 @@ add_menu_control(CamUnitControlWidget *self, CamUnitControl *ctl)
     }
 #endif
 
-    gtk_table_attach (priv->table, eb, 1, 3,
-            priv->trows, priv->trows+1,
-            GTK_EXPAND | GTK_SHRINK | GTK_FILL, 0, 0, 0);
+    gtk_widget_set_hexpand(eb, TRUE);
+    gtk_grid_attach (priv->table, eb, 1, priv->trows, 2, 1); // GTK_EXPAND | GTK_SHRINK | GTK_FILL
     gtk_widget_show (eb);
     gtk_widget_show (mb);
 
@@ -858,16 +847,13 @@ add_string_control_filename(CamUnitControlWidget *self, CamUnitControl *ctl)
     GtkWidget *label = gtk_label_new(tmp);
     free(tmp);
     gtk_misc_set_alignment (GTK_MISC (label), 1, 0.5);
-    gtk_table_attach (priv->table, label, 0, 1,
-            priv->trows, priv->trows+1,
-            GTK_FILL, 0, 0, 0);
+    gtk_grid_attach (priv->table, label, 0, priv->trows, 1, 1); // GTK_FILL
     gtk_widget_show (label);
 
     // hbox to contain the text entry and file chooser button
     GtkWidget *hbox = gtk_box_new(GTK_ORIENTATION_HORIZONTAL, 0);
-    gtk_table_attach(priv->table, hbox, 1, 3, 
-            priv->trows, priv->trows+1,
-            GTK_EXPAND | GTK_SHRINK | GTK_FILL, 0, 0, 0);
+    gtk_widget_set_hexpand(hbox, TRUE);
+    gtk_grid_attach(priv->table, hbox, 1, priv->trows, 2, 1); // GTK_EXPAND | GTK_SHRINK | GTK_FILL
     gtk_widget_show(hbox);
 
     // text entry
@@ -954,9 +940,7 @@ add_string_control_entry(CamUnitControlWidget *self, CamUnitControl *ctl)
     GtkWidget *label = gtk_label_new(tmp);
     free(tmp);
     gtk_misc_set_alignment (GTK_MISC (label), 1, 0.5);
-    gtk_table_attach (priv->table, label, 0, 1,
-            priv->trows, priv->trows+1,
-            GTK_FILL, 0, 0, 0);
+    gtk_grid_attach (priv->table, label, 0, priv->trows, 1, 1); // GTK_FILL
     gtk_widget_show (label);
 
     GtkWidget *hbox = gtk_box_new (GTK_ORIENTATION_HORIZONTAL, 1);
@@ -970,9 +954,8 @@ add_string_control_entry(CamUnitControlWidget *self, CamUnitControl *ctl)
     GtkWidget *button = gtk_button_new_with_label ("Set");
     gtk_box_pack_start (GTK_BOX (hbox), button, FALSE, FALSE, 0);
 
-    gtk_table_attach(priv->table, hbox, 1, 3, 
-            priv->trows, priv->trows+1,
-            GTK_EXPAND | GTK_SHRINK | GTK_FILL, 0, 0, 0);
+    gtk_widget_set_hexpand(hbox, TRUE);
+    gtk_grid_attach(priv->table, hbox, 1, priv->trows, 2, 1); // GTK_EXPAND | GTK_SHRINK | GTK_FILL
 
     gtk_widget_show_all(hbox);
 
