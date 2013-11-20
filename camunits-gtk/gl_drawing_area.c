@@ -86,7 +86,8 @@ cam_gl_drawing_area_init (CamGLDrawingArea * self)
     priv->swap_requested = 0;
 #endif
 
-    XVisualInfo * vinfo = glXChooseVisual (GDK_DISPLAY (),
+    Display *display = GDK_DISPLAY_XDISPLAY (gdk_display_get_default ());
+    XVisualInfo * vinfo = glXChooseVisual (display,
             GDK_SCREEN_XNUMBER (gdk_screen_get_default ()),
             attr_list);
     if (!vinfo) {
@@ -101,9 +102,7 @@ cam_gl_drawing_area_init (CamGLDrawingArea * self)
     for (vis = visuals; vis; vis = vis->next) {
         Visual * xv = GDK_VISUAL_XVISUAL (vis->data);
         if (XVisualIDFromVisual (xv) == desired_id) {
-            GdkColormap * colormap = gdk_colormap_new (vis->data, FALSE);
-            gtk_widget_set_colormap (GTK_WIDGET (self), colormap);
-            g_object_unref (G_OBJECT (colormap));
+            gtk_widget_set_visual (GTK_WIDGET (self), GDK_VISUAL(vis->data));
             break;
         }
     }
@@ -205,7 +204,7 @@ swap_func (GIOChannel * source, GIOCondition cond, gpointer data)
 
     if (priv->swap_requested) {
         if (cam_gl_drawing_area_set_context (self) == 0)
-            glXSwapBuffers (priv->dpy, GDK_WINDOW_XID (widget->window));
+            glXSwapBuffers (priv->dpy, GDK_WINDOW_XID (gtk_widget_get_window(widget)));
         priv->swap_requested = 0;
     }
 
@@ -251,21 +250,20 @@ cam_gl_drawing_area_realize (GtkWidget * widget)
     /* chain up */
     GTK_WIDGET_CLASS (cam_gl_drawing_area_parent_class)->realize (widget);
 
-    priv->dpy = GDK_WINDOW_XDISPLAY(widget->window);
+    priv->dpy = GDK_WINDOW_XDISPLAY(gtk_widget_get_window(widget));
 
 #if 0
     priv->visual = glXChooseVisual (priv->dpy,
-            GDK_SCREEN_XNUMBER (gdk_drawable_get_screen (GDK_DRAWABLE (widget->window))),
+            GDK_SCREEN_XNUMBER (gdk_drawable_get_screen (GDK_DRAWABLE (gtk_widget_get_window(widget)))),
             //DefaultScreen (priv->dpy),
             attr_list);
 #endif
-    GdkDrawable * draw = GDK_DRAWABLE (widget->window);
-    int screen = GDK_SCREEN_XNUMBER (gdk_drawable_get_screen (draw));
+    GdkVisual * visual = GDK_VISUAL (gtk_widget_get_visual(widget));
+    int screen = GDK_SCREEN_XNUMBER (gdk_visual_get_screen (visual));
     XVisualInfo vinfo_template = {
-        .visualid = XVisualIDFromVisual (gdk_x11_visual_get_xvisual (
-                    gdk_drawable_get_visual (draw))),
+        .visualid = XVisualIDFromVisual (gdk_x11_visual_get_xvisual (visual)),
         .screen = screen,
-        .depth = gdk_drawable_get_depth (draw),
+        .depth = gdk_visual_get_depth (visual),
     };
     int nitems;
 //    fprintf (stderr, "Using X Visual 0x%x\n",
@@ -289,7 +287,7 @@ cam_gl_drawing_area_realize (GtkWidget * widget)
         return;
     }
 
-    if (!glXMakeCurrent (priv->dpy, GDK_WINDOW_XID (widget->window),
+    if (!glXMakeCurrent (priv->dpy, GDK_WINDOW_XID (gtk_widget_get_window(widget)),
                 priv->context)) {
         g_warning ("Could not make GLX context current\n");
         return;
@@ -400,10 +398,10 @@ cam_gl_drawing_area_swap_buffers (CamGLDrawingArea * self)
     }
 #endif
     /* If we can't monitor vblank, we swap immediately. */
-    if (!GTK_WIDGET_REALIZED (widget) || !priv->dpy)
+    if (!gtk_widget_get_realized (widget) || !priv->dpy)
         return;
 
-    glXSwapBuffers (priv->dpy, GDK_WINDOW_XID (widget->window));
+    glXSwapBuffers (priv->dpy, GDK_WINDOW_XID (gtk_widget_get_window(widget)));
 }
 
 int
@@ -412,15 +410,17 @@ cam_gl_drawing_area_set_context (CamGLDrawingArea * self)
     GtkWidget * widget = GTK_WIDGET (self);
     CamGLDrawingAreaPrivate * priv = CAM_GL_DRAWING_AREA_GET_PRIVATE (self);
 
-    if (!GTK_WIDGET_REALIZED (widget) || !priv->context)
+    if (!gtk_widget_get_realized (widget) || !priv->context)
         return -1;
 
-    if (!glXMakeCurrent (priv->dpy, GDK_WINDOW_XID (widget->window),
+    if (!glXMakeCurrent (priv->dpy, GDK_WINDOW_XID (gtk_widget_get_window(widget)),
                 priv->context)) {
         g_warning ("Could not make GLX context current\n");
         return -1;
     }
-    glViewport(0, 0, widget->allocation.width, widget->allocation.height);
+    GtkAllocation allocation;
+    gtk_widget_get_allocation(widget, &allocation);
+    glViewport(0, 0, allocation.width, allocation.height);
     return 0;
 }
 
@@ -428,7 +428,9 @@ void
 cam_gl_drawing_area_invalidate (CamGLDrawingArea * self)
 {
     GtkWidget * widget = GTK_WIDGET (self);
+    GtkAllocation allocation;
+    gtk_widget_get_allocation(widget, &allocation);
     gtk_widget_queue_draw_area (widget, 0, 0,
-            widget->allocation.width, widget->allocation.height);
+            allocation.width, allocation.height);
 }
 

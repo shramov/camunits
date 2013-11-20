@@ -198,10 +198,10 @@ setup_gtk (state_t *self)
     gtk_window_set_title(self->window, "Camview");
     gtk_window_set_resizable(self->window, TRUE);
     gtk_window_set_default_size(self->window, 1000, 540);
-    gtk_signal_connect (GTK_OBJECT (self->window), "delete_event", 
-            GTK_SIGNAL_FUNC (gtk_main_quit), NULL);
+    g_signal_connect (G_OBJECT (self->window), "delete_event", 
+            G_CALLBACK (gtk_main_quit), NULL);
 
-    GtkWidget *vbox = gtk_vbox_new (FALSE, 0);
+    GtkWidget *vbox = gtk_box_new (GTK_ORIENTATION_VERTICAL, 0);
     gtk_container_add (GTK_CONTAINER (self->window), vbox);
 
     // menu bar
@@ -210,47 +210,47 @@ setup_gtk (state_t *self)
     
     // file menu
     GtkWidget *file_menu_item = gtk_menu_item_new_with_mnemonic ("_File");
-    gtk_menu_bar_append (GTK_MENU_BAR (menubar), file_menu_item);
+    gtk_menu_shell_append (GTK_MENU_SHELL (menubar), file_menu_item);
     GtkWidget *file_menu = gtk_menu_new ();
     gtk_menu_item_set_submenu (GTK_MENU_ITEM (file_menu_item), file_menu);
     
     GtkWidget *open_mi = 
         gtk_image_menu_item_new_from_stock (GTK_STOCK_OPEN, NULL);
-    gtk_menu_append (GTK_MENU (file_menu), open_mi);
-    gtk_signal_connect (GTK_OBJECT (open_mi), "activate", 
-            GTK_SIGNAL_FUNC (on_open_menu_item_activate), self);
+    gtk_menu_shell_append (GTK_MENU_SHELL (file_menu), open_mi);
+    g_signal_connect (G_OBJECT (open_mi), "activate", 
+            G_CALLBACK (on_open_menu_item_activate), self);
     
     GtkWidget *save_mi = 
         gtk_image_menu_item_new_from_stock (GTK_STOCK_SAVE, NULL);
-    gtk_menu_append (GTK_MENU (file_menu), save_mi);
-    gtk_signal_connect (GTK_OBJECT (save_mi), "activate", 
-            GTK_SIGNAL_FUNC (on_save_menu_item_activate), self);
+    gtk_menu_shell_append (GTK_MENU_SHELL (file_menu), save_mi);
+    g_signal_connect (G_OBJECT (save_mi), "activate", 
+            G_CALLBACK (on_save_menu_item_activate), self);
     
     GtkWidget *quit_mi = 
         gtk_image_menu_item_new_from_stock (GTK_STOCK_QUIT, NULL);
-    gtk_menu_append (GTK_MENU (file_menu), quit_mi);
-    gtk_signal_connect (GTK_OBJECT (quit_mi), "activate", 
-            GTK_SIGNAL_FUNC (gtk_main_quit), NULL);
+    gtk_menu_shell_append (GTK_MENU_SHELL (file_menu), quit_mi);
+    g_signal_connect (G_OBJECT (quit_mi), "activate", 
+            G_CALLBACK (gtk_main_quit), NULL);
 
     // view menu
     GtkWidget *view_menu_item = gtk_menu_item_new_with_mnemonic ("_View");
-    gtk_menu_bar_append (GTK_MENU_BAR (menubar), view_menu_item);
+    gtk_menu_shell_append (GTK_MENU_SHELL (menubar), view_menu_item);
     GtkWidget *view_menu = gtk_menu_new ();
     gtk_menu_item_set_submenu (GTK_MENU_ITEM (view_menu_item), view_menu);
 
     GtkWidget *show_manager_mi = 
         gtk_check_menu_item_new_with_mnemonic ("Show _Manager");
-    gtk_menu_append (GTK_MENU (view_menu), show_manager_mi);
+    gtk_menu_shell_append (GTK_MENU_SHELL (view_menu), show_manager_mi);
     gtk_check_menu_item_set_active (GTK_CHECK_MENU_ITEM (show_manager_mi), 
             TRUE);
-    gtk_signal_connect (GTK_OBJECT (show_manager_mi), "toggled",
-            GTK_SIGNAL_FUNC (on_show_manager_mi_toggled), self);
+    g_signal_connect (G_OBJECT (show_manager_mi), "toggled",
+            G_CALLBACK (on_show_manager_mi_toggled), self);
     GtkWidget *show_chain_mi = 
         gtk_check_menu_item_new_with_mnemonic ("Show _Chain");
-    gtk_menu_append (GTK_MENU (view_menu), show_chain_mi);
+    gtk_menu_shell_append (GTK_MENU_SHELL (view_menu), show_chain_mi);
     gtk_check_menu_item_set_active (GTK_CHECK_MENU_ITEM (show_chain_mi), TRUE);
-    gtk_signal_connect (GTK_OBJECT (show_chain_mi), "toggled",
-            GTK_SIGNAL_FUNC (on_show_chain_mi_toggled), self);
+    g_signal_connect (G_OBJECT (show_chain_mi), "toggled",
+            G_CALLBACK (on_show_chain_mi_toggled), self);
 
     // horizontal panes
     GtkWidget *hpane1 = gtk_hpaned_new ();

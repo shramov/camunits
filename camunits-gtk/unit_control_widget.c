@@ -33,9 +33,8 @@ struct _CamUnitControlWidgetPriv {
     GtkTable *table;
     GtkWidget * arrow_bin;
     GtkWidget * exp_label;
-    GtkTooltips * tooltips;
 
-    GtkComboBox *formats_combo;
+    GtkComboBoxText *formats_combo;
     int formats_combo_nentries;
 
     int trows;
@@ -83,7 +82,7 @@ cam_unit_control_widget_init(CamUnitControlWidget *self)
             &cam_unit_control_widget_target_entry, 1, GDK_ACTION_PRIVATE);
 
     // vbox for everything
-    GtkWidget * vbox_outer = gtk_vbox_new (FALSE, 0);
+    GtkWidget * vbox_outer = gtk_box_new (GTK_ORIENTATION_VERTICAL, 0);
     gtk_container_add (GTK_CONTAINER (self), vbox_outer);
     gtk_widget_show (vbox_outer);
 
@@ -94,12 +93,12 @@ cam_unit_control_widget_init(CamUnitControlWidget *self)
     gtk_widget_show(frame);
 
     // vbox for rows
-    GtkWidget *vbox = gtk_vbox_new(FALSE, 0);
+    GtkWidget *vbox = gtk_box_new(GTK_ORIENTATION_VERTICAL, 0);
     gtk_container_add(GTK_CONTAINER(frame), vbox);
     gtk_widget_show(vbox);
 
     // box for expander and close button
-    GtkWidget * hbox = gtk_hbox_new (FALSE, 0);
+    GtkWidget * hbox = gtk_box_new (GTK_ORIENTATION_HORIZONTAL, 0);
     gtk_box_pack_start(GTK_BOX(vbox), hbox, FALSE, FALSE, 0);
     gtk_widget_show (hbox);
 
@@ -152,11 +151,11 @@ cam_unit_control_widget_init(CamUnitControlWidget *self)
 //            FALSE, FALSE, 0);
 //    gtk_widget_show (priv->arrow_bin);
     // output formats selector
-    priv->formats_combo = GTK_COMBO_BOX(gtk_combo_box_new_text());
+    priv->formats_combo = GTK_COMBO_BOX_TEXT(gtk_combo_box_text_new());
     GtkWidget *fmtlabel = gtk_label_new("Format:");
     gtk_misc_set_alignment (GTK_MISC (fmtlabel), 1, 0.5);
 
-    GtkWidget * fhbox = gtk_hbox_new (FALSE, 0);
+    GtkWidget * fhbox = gtk_box_new (GTK_ORIENTATION_HORIZONTAL, 0);
     gtk_box_pack_start (GTK_BOX (fhbox), fmtlabel, FALSE, FALSE, 0);
     gtk_box_pack_start (GTK_BOX (fhbox), GTK_WIDGET (priv->formats_combo),
             TRUE, TRUE, 0);
@@ -171,10 +170,6 @@ cam_unit_control_widget_init(CamUnitControlWidget *self)
     priv->formats_changed_handler_id = 0;
 
     priv->unit = NULL;
-
-    priv->tooltips = gtk_tooltips_new ();
-    gtk_tooltips_enable (priv->tooltips);
-    g_object_ref (priv->tooltips);
 }
 
 static void
@@ -211,7 +206,6 @@ cam_unit_control_widget_finalize(GObject *obj)
     priv->ctl_info = NULL;
 
     cam_unit_control_widget_detach(self);
-    g_object_unref (priv->tooltips);
 
     G_OBJECT_CLASS (cam_unit_control_widget_parent_class)->finalize(obj);
 }
@@ -342,8 +336,7 @@ set_tooltip (CamUnitControlWidget * self, GtkWidget * widget,
     snprintf (str, sizeof (str), "ID: %s\nType: %s", 
             cam_unit_control_get_id(ctl),
             cam_unit_control_get_control_type_str (ctl));
-    CamUnitControlWidgetPriv * priv = CAM_UNIT_CONTROL_WIDGET_GET_PRIVATE(self);
-    gtk_tooltips_set_tip (priv->tooltips, widget, str, str);
+    gtk_widget_set_tooltip_text (widget, str);
 }
 
 static void
@@ -371,7 +364,7 @@ add_slider (CamUnitControlWidget * self,
      * values.  Strangely, this functionality is normally only
      * available when draw_value is TRUE. */
     if (use_int)
-        GTK_RANGE (range)->round_digits = 0;
+        gtk_range_set_round_digits (GTK_RANGE (range), 0);
 
     gtk_table_attach (priv->table, range, 1, 2,
             priv->trows, priv->trows+1,
@@ -871,7 +864,7 @@ add_string_control_filename(CamUnitControlWidget *self, CamUnitControl *ctl)
     gtk_widget_show (label);
 
     // hbox to contain the text entry and file chooser button
-    GtkWidget *hbox = gtk_hbox_new(FALSE, 0);
+    GtkWidget *hbox = gtk_box_new(GTK_ORIENTATION_HORIZONTAL, 0);
     gtk_table_attach(priv->table, hbox, 1, 3, 
             priv->trows, priv->trows+1,
             GTK_EXPAND | GTK_SHRINK | GTK_FILL, 0, 0, 0);
@@ -882,7 +875,7 @@ add_string_control_filename(CamUnitControlWidget *self, CamUnitControl *ctl)
     set_tooltip (self, entry, ctl);
     gtk_entry_set_text(GTK_ENTRY(entry), cam_unit_control_get_string(ctl));
     gtk_box_pack_start(GTK_BOX(hbox), entry, FALSE, FALSE, 0);
-    gtk_entry_set_editable(GTK_ENTRY(entry), FALSE);
+    gtk_editable_set_editable(GTK_EDITABLE(entry), FALSE);
     gtk_widget_show(entry);
 
     // file chooser button
@@ -937,7 +930,7 @@ static gboolean
 on_string_control_key (GtkEntry * entry, GdkEventKey * event,
         CamUnitControlWidget * self)
 {
-    if (event->keyval != GDK_Escape)
+    if (event->keyval != GDK_KEY_Escape)
         return FALSE;
 
     ControlWidgetInfo *ci = 
@@ -966,7 +959,7 @@ add_string_control_entry(CamUnitControlWidget *self, CamUnitControl *ctl)
             GTK_FILL, 0, 0, 0);
     gtk_widget_show (label);
 
-    GtkWidget *hbox = gtk_hbox_new (FALSE, 1);
+    GtkWidget *hbox = gtk_box_new (GTK_ORIENTATION_HORIZONTAL, 1);
     // text entry
     GtkWidget *entry = gtk_entry_new();
     set_tooltip (self, entry, ctl);
@@ -1184,10 +1177,10 @@ set_frame_label(CamUnitControlWidget *self)
         const char *sstr = cam_unit_is_streaming (priv->unit) ? 
             "Streaming" : "Off";
         char *tmp = g_strjoin("", uname, " [", sstr, "]", NULL);
-        gtk_label_set (GTK_LABEL (priv->exp_label), tmp);
+        gtk_label_set_text (GTK_LABEL (priv->exp_label), tmp);
         free(tmp);
     } else {
-        gtk_label_set (GTK_LABEL (priv->exp_label), "INVALID UNIT");
+        gtk_label_set_text (GTK_LABEL (priv->exp_label), "INVALID UNIT");
     }
 }
 
@@ -1196,7 +1189,7 @@ update_formats_combo(CamUnitControlWidget *self)
 {
     CamUnitControlWidgetPriv * priv = CAM_UNIT_CONTROL_WIDGET_GET_PRIVATE(self);
     for(; priv->formats_combo_nentries; priv->formats_combo_nentries--) {
-        gtk_combo_box_remove_text(priv->formats_combo, 0);
+        gtk_combo_box_text_remove(priv->formats_combo, 0);
     }
 
     if (! priv->unit) return;
@@ -1208,7 +1201,7 @@ update_formats_combo(CamUnitControlWidget *self)
     priv->formats_combo_nentries = 0;
     for(fiter=output_formats; fiter; fiter=fiter->next) {
         CamUnitFormat *fmt = (CamUnitFormat*) fiter->data;
-        gtk_combo_box_append_text(priv->formats_combo, 
+        gtk_combo_box_text_append_text(priv->formats_combo, 
                 fmt->name);
 
         if(fmt == out_fmt) {

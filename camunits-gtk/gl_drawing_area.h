@@ -2,8 +2,7 @@
 #define __CAM_GL_GL_DRAWING_AREA_H__
 
 #include <gdk/gdk.h>
-#include <gtk/gtkwidget.h>
-#include <gtk/gtkdrawingarea.h>
+#include <gtk/gtk.h>
 
 G_BEGIN_DECLS
 

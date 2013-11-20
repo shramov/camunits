@@ -161,13 +161,11 @@ cam_unit_chain_widget_set_orientation(CamUnitChainWidget *self,
         (orientation == GTK_ORIENTATION_VERTICAL && 
                 GTK_IS_VBOX (priv->box))) return;
 
-    GtkBox *newbox = NULL;
+    GtkBox *newbox = GTK_BOX(gtk_box_new(orientation, 5));
     if (orientation == GTK_ORIENTATION_HORIZONTAL) {
-        newbox = GTK_BOX(gtk_hbox_new(FALSE, 5));
         priv->child_expand = TRUE;
         priv->child_fill = TRUE;
     } else {
-        newbox = GTK_BOX(gtk_vbox_new(FALSE, 5));
         priv->child_expand = FALSE;
         priv->child_fill = FALSE;
     }
@@ -203,8 +201,10 @@ on_unit_control_drag_begin(GtkWidget *widget, GdkDragContext *drag,
     int x, y;
     int w, h;
 
-    w = widget->allocation.width;
-    h = widget->allocation.height;
+    GtkAllocation allocation;
+    gtk_widget_get_allocation(widget, &allocation);
+    w = allocation.width;
+    h = allocation.height;
 
     gtk_widget_get_pointer (widget, &x, &y);
     GtkWidget *drag_window = gtk_window_new(GTK_WINDOW_POPUP);
@@ -275,23 +275,27 @@ on_drag_motion (GtkWidget * widget, GdkDragContext * drag,
     // which unit?
     priv->insert_position = 0;
     GList *biter;
-    for (biter=priv->box->children; biter; biter=biter->next) {
-        GtkBoxChild *child = (GtkBoxChild*) biter->data;
-        if (! IS_CAM_UNIT_CONTROL_WIDGET (child->widget)) continue;
+    GList *children = gtk_container_get_children (GTK_CONTAINER(priv->box));
+    for (biter=children; biter; biter=biter->next) {
+        GtkWidget *child = biter->data;
+        if (! IS_CAM_UNIT_CONTROL_WIDGET (child)) continue;
 
         int ucw_x, ucw_y;
-        gtk_widget_translate_coordinates (widget, child->widget, 
+        gtk_widget_translate_coordinates (widget, child, 
                 x, y, &ucw_x, &ucw_y);
 
-        if (ucw_y <= child->widget->allocation.height/2) break;
+        if (ucw_y <= gtk_widget_get_allocated_height (child)/2) break;
         priv->insert_position++;
     }
+    g_list_free (children);
 
     if (! priv->drag_proxy) {
+	GtkAllocation allocation;
+	gtk_widget_get_allocation (GTK_WIDGET(ucw), &allocation);
         priv->drag_proxy = gtk_drawing_area_new();
         gtk_widget_set_size_request (priv->drag_proxy, 
-                GTK_WIDGET(ucw)->allocation.width,
-                GTK_WIDGET(ucw)->allocation.height);
+                allocation.width,
+                allocation.height);
         gtk_box_pack_start (priv->box, priv->drag_proxy, 
                priv->child_expand, priv->child_fill, priv->child_padding);
         gtk_drag_highlight (priv->drag_proxy);
@@ -376,19 +380,22 @@ on_unit_removed(CamUnitChain *chain, CamUnit *unit, CamUnitChainWidget *self)
     dbg(DBG_GUI, "ChainWidget detected unit [%s] removed from chain\n", 
             cam_unit_get_id(unit));
     
+    GList *children = gtk_container_get_children (GTK_CONTAINER(priv->box));
     GList *biter;
-    for (biter=priv->box->children; biter; biter=biter->next) {
-        GtkBoxChild *child = (GtkBoxChild*) biter->data;
-        if (! IS_CAM_UNIT_CONTROL_WIDGET (child->widget)) continue;
+    for (biter=children; biter; biter=biter->next) {
+        GtkWidget *child = biter->data;
+        if (! IS_CAM_UNIT_CONTROL_WIDGET (child)) continue;
 
-        CamUnitControlWidget *ucw = CAM_UNIT_CONTROL_WIDGET(child->widget);
+        CamUnitControlWidget *ucw = CAM_UNIT_CONTROL_WIDGET(child);
         CamUnit *ucw_unit = cam_unit_control_widget_get_unit(ucw);
         if (ucw_unit == unit) {
             cam_unit_control_widget_detach (ucw);
-            gtk_widget_destroy (child->widget);
+            gtk_widget_destroy (child);
+	    g_list_free (children);
             return;
         }
     }
+    g_list_free (children);
 }
 
 static void
@@ -398,18 +405,20 @@ on_unit_reordered(CamUnitChain *chain, CamUnit *unit, CamUnitChainWidget *self)
     dbg(DBG_GUI, "ChainWidget detected unit [%s] reordered\n",
             cam_unit_get_id(unit));
     int newindex = cam_unit_chain_get_unit_index (chain, unit);
+    GList *children = gtk_container_get_children (GTK_CONTAINER(priv->box));
     GList *biter;
-    for (biter=priv->box->children; biter; biter=biter->next) {
-        GtkBoxChild *child = (GtkBoxChild*) biter->data;
-        if (! IS_CAM_UNIT_CONTROL_WIDGET (child->widget)) continue;
+    for (biter=children; biter; biter=biter->next) {
+        GtkWidget *child = biter->data;
+        if (! IS_CAM_UNIT_CONTROL_WIDGET (child)) continue;
 
-        CamUnitControlWidget *ucw = CAM_UNIT_CONTROL_WIDGET(child->widget);
+        CamUnitControlWidget *ucw = CAM_UNIT_CONTROL_WIDGET(child);
         CamUnit *ucw_unit = cam_unit_control_widget_get_unit(ucw);
         if (ucw_unit == unit) {
-            gtk_box_reorder_child (priv->box, child->widget, newindex);
+            gtk_box_reorder_child (priv->box, child, newindex);
             break;
         }
     }
+    g_list_free (children);
 }
 
 static void
@@ -447,7 +456,7 @@ cam_unit_chain_widget_find_unit_by_id (const CamUnitChainWidget * self,
         const char * unit_id)
 {
     CamUnitChainWidgetPriv *priv = CAM_UNIT_CHAIN_WIDGET_GET_PRIVATE(self);
-    GList *children = gtk_container_get_children(GTK_CONTAINER(priv->box));
+    GList * children = gtk_container_get_children (GTK_CONTAINER(priv->box));
     GList * iter;
 
     for (iter = children; iter; iter = iter->next) {
@@ -457,8 +466,11 @@ cam_unit_chain_widget_find_unit_by_id (const CamUnitChainWidget * self,
         CamUnitControlWidget * widget = iter->data;
         CamUnit *unit = cam_unit_control_widget_get_unit(widget);
         const char *wuid = cam_unit_get_id(unit);
-        if (!strcmp (wuid, unit_id))
+        if (!strcmp (wuid, unit_id)) {
+	    g_list_free (children);
             return widget;
+	}
     }
+    g_list_free (children);
     return NULL;
 }

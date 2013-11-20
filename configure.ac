@@ -16,7 +16,7 @@ esac
 
 AC_PROG_CC
 AM_PATH_GLIB_2_0(,,,gthread gobject gmodule)
-AM_PATH_GTK_2_0
+AM_PATH_GTK_3_0
 AC_CHECK_LIB(GL, glBegin, GL_LIBS='-lGL',
              [AC_MSG_ERROR([OpenGL not found, but is required by camunits.])])
 AC_CHECK_LIB(jpeg, jpeg_destroy_decompress, JPEG_LIBS='-ljpeg',

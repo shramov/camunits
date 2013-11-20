@@ -42,7 +42,7 @@ G_DEFINE_TYPE (CamUnitChainGLWidget, cam_unit_chain_gl_widget,
 
 static gboolean on_gl_configure (GtkWidget *widget, GdkEventConfigure *event, 
         void* user_data);
-static gboolean on_gl_expose (GtkWidget * widget, GdkEventExpose * event, 
+static gboolean on_gl_expose (GtkWidget * widget, cairo_t * event, 
         void* user_data);
 static void on_unit_added (CamUnitChain *chain, CamUnit *unit, 
         void *user_data);
@@ -76,7 +76,7 @@ cam_unit_chain_gl_widget_init (CamUnitChainGLWidget *self)
     gtk_container_add (GTK_CONTAINER (priv->aspect), priv->msg_area);
     gtk_widget_show (priv->msg_area);
 
-    g_signal_connect (G_OBJECT (priv->gl_area), "expose-event",
+    g_signal_connect (G_OBJECT (priv->gl_area), "draw",
             G_CALLBACK (on_gl_expose), self);
     g_signal_connect (G_OBJECT (priv->gl_area), "configure-event",
             G_CALLBACK (on_gl_configure), self);
@@ -256,7 +256,7 @@ render_renderable_units (CamUnitChain *chain)
 }
 
 static gboolean 
-on_gl_expose (GtkWidget * widget, GdkEventExpose * event, 
+on_gl_expose (GtkWidget * widget, cairo_t * cr, 
         void* user_data)
 {
     CamUnitChainGLWidget *self = CAM_UNIT_CHAIN_GL_WIDGET (user_data);
