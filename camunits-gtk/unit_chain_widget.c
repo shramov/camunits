@@ -206,7 +206,8 @@ on_unit_control_drag_begin(GtkWidget *widget, GdkDragContext *drag,
     w = allocation.width;
     h = allocation.height;
 
-    gtk_widget_get_pointer (widget, &x, &y);
+    x = y = 0;
+    //gtk_widget_get_pointer (widget, &x, &y);
     GtkWidget *drag_window = gtk_window_new(GTK_WINDOW_POPUP);
     gtk_widget_reparent(widget, drag_window);
     gtk_widget_set_size_request(widget, w, h);
