@@ -1,6 +1,7 @@
 SUBDIRS = pixmaps
 
 AM_CFLAGS += \
+	-Werror \
 	-DCAMUNITS_PIXMAP_PATH=\""$(camunitspixmapdir)"\"
 
 INCLUDES = \
